@@ -30,7 +30,7 @@
 #include <opencv2/highgui/highgui.hpp>
 
 #include <iostream>
-
+#include "KinectVideoCapture.h"
 // Not much interesting here, move along
 void drawTags(
     cv::Mat outputImage,
@@ -45,6 +45,8 @@ int main(int argc, char* argv[])
     // Initialising input video
     int xRes = 640;
     int yRes = 480;
+	xRes = 1980;
+	yRes = 1080;
     int cameraIndex = 0;
     if (argc > 2) {
         xRes = std::atoi(argv[1]);
@@ -55,7 +57,7 @@ int main(int argc, char* argv[])
     }
 
     // The source of input images
-    cv::VideoCapture capture(cameraIndex);
+	KinectVideoCapture capture(cameraIndex);
     if (!capture.isOpened())
     {
         std::cerr << "Unable to initialise video capture." << std::endl;

@@ -36,13 +36,15 @@
 #include <opencv2/highgui/highgui.hpp>
 
 #include <iostream>
-
+#include "KinectVideoCapture.h"
 
 int main(int argc, char* argv[])
 {
     // Simple parsing of the parameters related to the image acquisition
     int xRes = 640;
     int yRes = 480;
+	xRes = 1980;
+	yRes = 1080;
     int cameraIndex = 0;
     if (argc > 2) {
         xRes = std::atoi(argv[1]);
@@ -53,7 +55,7 @@ int main(int argc, char* argv[])
     }
 
     // The source of input images
-    cv::VideoCapture capture(cameraIndex);
+    KinectVideoCapture capture(cameraIndex);
     if (!capture.isOpened())
     {
         std::cerr << "Unable to initialise video capture." << std::endl;
@@ -78,7 +80,7 @@ int main(int argc, char* argv[])
     // Chilitags actually removes it.
     // Here, we cancel this to show the raw detection results.
     chilitags.setFilter(0, 0.0f);
-
+	
     cv::namedWindow("DisplayChilitags");
     // Main loop, exiting when 'q is pressed'
     for (; 'q' != (char) cv::waitKey(1); ) {

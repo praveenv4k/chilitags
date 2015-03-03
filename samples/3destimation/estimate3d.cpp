@@ -24,7 +24,7 @@
 
 #include <opencv2/core/core.hpp> // for cv::Mat
 #include <opencv2/highgui/highgui.hpp> // for camera capture
-
+#include "KinectVideoCapture.h"
 using namespace std;
 using namespace cv;
 
@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
     /*    Init camera capture    */
     /*****************************/
     int cameraIndex = 0;
-    cv::VideoCapture capture(cameraIndex);
+	KinectVideoCapture capture(cameraIndex);
     if (!capture.isOpened())
     {
         cerr << "Unable to initialise video capture.\n";

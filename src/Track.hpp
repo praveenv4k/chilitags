@@ -22,8 +22,8 @@
 #define Track_HPP
 
 #include <map>
-#include <pthread.h>
-
+//#include <pthread.h>
+#include <boost/thread.hpp>
 #include <opencv2/core/core.hpp>
 
 #include <chilitags.hpp>
@@ -48,8 +48,8 @@ Refine mRefine;
 cv::Mat mPrevFrame;
 TagCornerMap mFromTags;
 
-pthread_mutex_t mInputLock;
-
+//pthread_mutex_t mInputLock;
+boost::mutex mInputLock;
 };
 
 }

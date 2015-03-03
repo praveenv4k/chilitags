@@ -29,14 +29,15 @@ namespace chilitags{
 Track::Track():
     mRefine(),
     mPrevFrame(),
-    mFromTags(),
-    mInputLock(PTHREAD_MUTEX_INITIALIZER)
+    mFromTags()
+    //mInputLock(PTHREAD_MUTEX_INITIALIZER)
 {
 }
 
 void Track::update(TagCornerMap const& tags)
 {
-    pthread_mutex_lock(&mInputLock);
+    //pthread_mutex_lock(&mInputLock);
+	boost::mutex::scoped_lock(mInputLock);
 
     auto targetIt = mFromTags.begin();
     for(const auto& tag : tags){
@@ -49,59 +50,59 @@ void Track::update(TagCornerMap const& tags)
             targetIt = mFromTags.insert(targetIt, tag);
     }
 
-    pthread_mutex_unlock(&mInputLock);
+    //pthread_mutex_unlock(&mInputLock);
 }
 
 TagCornerMap Track::operator()(cv::Mat const& grayscaleInputImage)
 {
 
-    std::vector<uchar> status;
-    std::vector<float> errors;
+	std::vector<uchar> status;
+	std::vector<float> errors;
 
-    //Do the tracking
-    pthread_mutex_lock(&mInputLock);
-    TagCornerMap trackedTags;
-    Quad quad;
-    for (auto tag : mFromTags) {
-        Quad result;
+	//Do the tracking
+	//pthread_mutex_lock(&mInputLock);
+	boost::mutex::scoped_lock(mInputLock);
+	TagCornerMap trackedTags;
+	Quad quad;
+	for (auto tag : mFromTags) {
+		Quad result;
 
-        static const float GROWTH_RATIO = 20.0f/10.0f;
-        cv::Rect roi = growRoi(grayscaleInputImage, cv::Mat_<cv::Point2f>(tag.second), GROWTH_RATIO);
-        cv::Point2f roiOffset = roi.tl();
-        for (int i : {0,1,2,3}) {
-            tag.second(i,0) -= roiOffset.x;
-            tag.second(i,1) -= roiOffset.y;
-        }
+		static const float GROWTH_RATIO = 20.0f / 10.0f;
+		cv::Rect roi = growRoi(grayscaleInputImage, cv::Mat_<cv::Point2f>(tag.second), GROWTH_RATIO);
+		cv::Point2f roiOffset = roi.tl();
+		for (int i : {0, 1, 2, 3}) {
+			tag.second(i, 0) -= roiOffset.x;
+			tag.second(i, 1) -= roiOffset.y;
+		}
 
-        cv::calcOpticalFlowPyrLK(
-            mPrevFrame(roi), grayscaleInputImage(roi),
-            tag.second, result,
-            status, errors,
-            //TODO play with parameters (with tests)
-            cv::Size(21,21), 3,
-            cv::TermCriteria(cv::TermCriteria::COUNT+cv::TermCriteria::EPS, 30, 0.01f)
-            );
+		cv::calcOpticalFlowPyrLK(
+			mPrevFrame(roi), grayscaleInputImage(roi),
+			tag.second, result,
+			status, errors,
+			//TODO play with parameters (with tests)
+			cv::Size(21, 21), 3,
+			cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30, 0.01f)
+			);
 
-        for (int i : {0,1,2,3}) {
-            result(i,0) += roiOffset.x;
-            result(i,1) += roiOffset.y;
-        }
+		for (int i : {0, 1, 2, 3}) {
+			result(i, 0) += roiOffset.x;
+			result(i, 1) += roiOffset.y;
+		}
 
-        if (cv::sum(cv::Mat(status))[0] == status.size()) {
-            quad = mRefine(grayscaleInputImage, result, 0.5f/10.0f);
-            if(ScreenOut::isConvex(quad))
-                trackedTags[tag.first] = quad;
-        }
-    }
+		if (cv::sum(cv::Mat(status))[0] == status.size()) {
+			quad = mRefine(grayscaleInputImage, result, 0.5f / 10.0f);
+			if (ScreenOut::isConvex(quad))
+				trackedTags[tag.first] = quad;
+		}
+	}
 
-    mFromTags = std::move(trackedTags);
-    TagCornerMap tagsCopy = mFromTags; //TODO: Try to get around this copy
-    pthread_mutex_unlock(&mInputLock);
+	mFromTags = std::move(trackedTags);
+	TagCornerMap tagsCopy = mFromTags; //TODO: Try to get around this copy
+	//pthread_mutex_unlock(&mInputLock);
+	//Swap current and previous frames
+	grayscaleInputImage.copyTo(mPrevFrame);
 
-    //Swap current and previous frames
-    grayscaleInputImage.copyTo(mPrevFrame);
-
-    return tagsCopy;
+	return tagsCopy;
 }
 
 } /* namespace chilitags */

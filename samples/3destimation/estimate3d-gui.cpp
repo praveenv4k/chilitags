@@ -26,7 +26,7 @@
 #include <opencv2/core/core_c.h> // CV_AA
 #include <opencv2/highgui/highgui.hpp> // for camera capture
 #include <opencv2/imgproc/imgproc.hpp> // for camera capture
-
+#include "KinectVideoCapture.h"
 using namespace std;
 using namespace cv;
 
@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
     /*    Init camera capture    */
     /*****************************/
     int cameraIndex = 0;
-    cv::VideoCapture capture(cameraIndex);
+	KinectVideoCapture capture(cameraIndex);
     if (!capture.isOpened())
     {
         cerr << "Unable to initialise video capture.\n";
@@ -67,6 +67,8 @@ int main(int argc, char* argv[])
 #else
     float inputWidth  = capture.get(CV_CAP_PROP_FRAME_WIDTH);
     float inputHeight = capture.get(CV_CAP_PROP_FRAME_HEIGHT);
+	inputWidth = 1980;
+	inputHeight = 1080;
 #endif
 
     chilitags::Chilitags3D chilitags3D(Size(inputWidth, inputHeight));
@@ -85,6 +87,7 @@ int main(int argc, char* argv[])
     }
 
     cv::Mat projectionMat = cv::Mat::zeros(4,4,CV_32F);
+	cout << chilitags3D.getCameraMatrix();
     chilitags3D.getCameraMatrix().copyTo(projectionMat(cv::Rect(0,0,3,3)));
     cv::Matx44f projection = projectionMat;
     projection(3,2) = 1;
@@ -99,7 +102,9 @@ int main(int argc, char* argv[])
         capture.read(inputImage);
         cv::Mat outputImage = inputImage.clone();
 
-        for (auto& kv : chilitags3D.estimate(inputImage)) {
+		chilitags::TagPoseMap tMap = chilitags3D.estimate(inputImage);
+		for (std::map<std::string, chilitags::TransformMatrix>::iterator kv = tMap.begin(); kv != tMap.end(); ++kv){
+        //for (auto& kv : chilitags3D.estimate(inputImage)) {
 
             static const float DEFAULT_SIZE = 20.f;
             static const cv::Vec4f UNITS[4] {
@@ -109,7 +114,7 @@ int main(int argc, char* argv[])
                 {0.f, 0.f, DEFAULT_SIZE, 1.f},
             };
 
-            cv::Matx44f transformation = kv.second;
+            cv::Matx44f transformation = kv->second;
             cv::Vec4f referential[4] = {
                 projection*transformation*UNITS[0],
                 projection*transformation*UNITS[1],
@@ -144,7 +149,7 @@ int main(int argc, char* argv[])
                             cv::FONT_HERSHEY_SIMPLEX, 0.5f, AXIS_COLORS[i-1]);
             }
 
-            cv::putText(outputImage, kv.first, t2DPoints[0],
+            cv::putText(outputImage, kv->first, t2DPoints[0],
                         cv::FONT_HERSHEY_SIMPLEX, 0.5f, cv::Scalar(255,255,255));
         }
 
